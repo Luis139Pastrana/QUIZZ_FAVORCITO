@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz Favorcito</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4ffe4;
+      color: #333;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo{
+      width: 500px;
+    }
+
+    header img {
+      width: 150px;
+      height: auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2e7d32;
+    }
+
+    .question {
+      background: #ffffff;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .question p {
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+
+    .answers {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .answers button {
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      background: #d4ed7b;
+      font-size: 16px;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .answers button.selected {
+      background-color: #2e7d32;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .submit-btn {
+      display: block;
+      margin: 20px auto;
+      background: #2e7d32;
+      color: white;
+      font-size: 18px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #result {
+      display: none;
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    #result img {
+      width: 100%;
+      max-width: 300px;
+      border-radius: 12px;
+    }
+
+    #result button,
+    #download-btn {
+      margin: 10px;
+      padding: 10px 20px;
+      background: #2e7d32;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #result button:hover,
+    #download-btn:hover {
+      background: #256128;
+    }
+
+    @media (max-width: 600px) {
+      .answers button {
+        font-size: 14px;
+      }
+
+      #result button,
+      #download-btn {
+        font-size: 14px;
+        padding: 8px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img class="logo" src="logo.png" alt="Logo de Favorcito" />
+  </header>
+
+  <h1>¿Qué nivel de Favorcito eres?</h1>
+  <div id="quiz"></div>
+  <button class="submit-btn" onclick="submitQuiz()">Ver resultado</button>
+
+  <div id="result">
+    <h2>¡Este es tu nivel!</h2>
+    <img id="result-image" src="" alt="Resultado">
+    <br>
+    <button onclick="share()">Compartir por WhatsApp</button>
+    <button id="download-btn" onclick="descargarImagen()">Descargar imagen</button>
+  </div>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const allQuestions = [
+      "¿Con qué frecuencia ayudas a tus compañeros cuando te lo piden?",
+      "¿Usarías Favorcito para ofrecer ayuda sin que te lo pidan?",
+      "¿Te gustaría que te reconozcan por ayudar a otros?",
+      "¿Te emociona completar retos o trivias en apps como Favorcito?",
+      "¿Recomendarías Favorcito a tus amigos?",
+      "¿Conoces a alguien que necesite ayuda y podrías invitarlo a Favorcito?",
+      "¿Responderías rápidamente a un favor publicado en la app?",
+      "¿Qué tanto confías en que otras personas también ayuden por Favorcito?",
+      "¿Te gustaría que tus favores acumulen puntos o te den niveles?",
+      "¿Te gustaría formar parte de una comunidad que se ayuda entre sí?",
+      "¿Aceptarías ayudar incluso si no recibes nada a cambio?",
+      "¿Estás dispuesto a ofrecer ayuda fuera de tu horario libre?",
+      "¿Te motiva más ayudar que recibir reconocimiento?",
+      "¿Prefieres trabajar en equipo que solo?",
+      "¿Harías un favor aunque no conozcas a la persona?",
+      "¿Te consideras una persona empática?",
+      "¿Te gusta compartir tus logros con otros?",
+      "¿Te consideras un ejemplo para tus amigos?",
+      "¿Ayudas aunque estés cansado?",
+      "¿Crees que pequeñas acciones cambian el mundo?"
+    ];
+
+    const options = ["Nunca", "A veces", "Casi siempre", "Siempre"];
+    const quizDiv = document.getElementById("quiz");
+    let selectedQuestions = [];
+    let currentImagePath = "";
+
+    function elegirPreguntasAleatorias(cantidad) {
+      const preguntasBarajadas = [...allQuestions].sort(() => 0.5 - Math.random());
+      return preguntasBarajadas.slice(0, cantidad);
+    }
+
+    function crearQuiz() {
+      selectedQuestions = elegirPreguntasAleatorias(10);
+      selectedQuestions.forEach((q, i) => {
+        const qDiv = document.createElement("div");
+        qDiv.classList.add("question");
+        qDiv.innerHTML = `<p>${i + 1}. ${q}</p>`;
+
+        const btnGroup = document.createElement("div");
+        btnGroup.classList.add("answers");
+
+        options.forEach((opt, index) => {
+          const btn = document.createElement("button");
+          btn.textContent = opt;
+          btn.onclick = () => {
+            const prev = qDiv.querySelector(".selected");
+            if (prev) prev.classList.remove("selected");
+            btn.classList.add("selected");
+            btn.dataset.value = index + 1;
+          };
+          btnGroup.appendChild(btn);
+        });
+
+        qDiv.appendChild(btnGroup);
+        quizDiv.appendChild(qDiv);
+      });
+    }
+
+    function submitQuiz() {
+      let total = 0;
+      const all = document.querySelectorAll(".question");
+
+      for (let q of all) {
+        const selected = q.querySelector(".selected");
+        if (!selected) {
+          alert("Por favor responde todas las preguntas.");
+          return;
+        }
+        total += parseInt(selected.dataset.value);
+      }
+
+      const result = document.getElementById("result");
+      const image = document.getElementById("result-image");
+
+      if (total <= 15) {
+        currentImagePath = "1.jpg";
+      } else if (total <= 25) {
+        currentImagePath = "2.jpg";
+      } else if (total <= 32) {
+        currentImagePath = "3.jpg";
+      } else {
+        currentImagePath = "4.jpg";
+      }
+
+      image.src = currentImagePath;
+      result.style.display = "block";
+    }
+
+    function share() {
+      const text = encodeURIComponent("¡Este es mi nivel Favorcito! 📲💙 Descúbrelo tú también 👉 https://favorcito.com/quiz");
+      const waUrl = `https://wa.me/?text=${text}`;
+      window.open(waUrl, "_blank");
+    }
+
+    function descargarImagen() {
+      const img = document.getElementById("result-image");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // Esperar que cargue la imagen
+      const imagen = new Image();
+      imagen.crossOrigin = "anonymous";
+      imagen.src = img.src;
+      imagen.onload = () => {
+        canvas.width = imagen.width;
+        canvas.height = imagen.height;
+        ctx.drawImage(imagen, 0, 0);
+        const link = document.createElement("a");
+        link.download = "mi_nivel_favorcito.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      };
+    }
+
+    crearQuiz();
+  </script>
+</body>
+</html>
